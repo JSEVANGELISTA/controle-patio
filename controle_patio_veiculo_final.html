@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Pátio - Reserva de Veículos (Online)</title>
+    <style>
+        /* Reset e Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex; /* Para centralizar o container */
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Container Principal */
+        .container {
+            max-width: 1400px;
+            width: 100%; /* Garante que o container ocupe a largura disponível */
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            display: flex; /* Para flexbox interno no container */
+            flex-direction: column; /* Conteúdo em coluna, header, depois main-content */
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Seção de Estatísticas */
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 30px 30px 0; /* Espaço em cima do main-content */
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .available-stat { color: #2ecc71; }
+        .waiting-stat { color: #f39c12; }
+        .occupied-stat { color: #e74c3c; }
+        .loaded-stat { color: #8e44ad; }
+        .total-stat { color: #3498db; }
+
+        /* Conteúdo Principal (Sidebar + Grid) */
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        /* Botões */
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 10px 20px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #d68910);
+        }
+        .btn-warning:hover {
+            box-shadow: 0 10px 20px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+        .btn-purple:hover {
+            box-shadow: 0 10px 20px rgba(142, 68, 173, 0.3);
+        }
+
+        /* Grid do Pátio */
+        .patio-grid {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .patio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap; /* Permite que a legenda quebre linha */
+        }
+
+        .patio-header h3 {
+            color: #2c3e50;
+            font-size: 1.5em;
+            margin-right: 15px; /* Espaçamento da legenda */
+        }
+
+        .status-legend {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .spots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .spot {
+            background: white;
+            border: 3px solid #2ecc71; /* Cor padrão para 'available' */
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spot::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .spot:hover::before {
+            left: 100%;
+        }
+
+        /* Estilos de Status */
+        .spot.occupied {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-color: #c0392b;
+            color: white;
+        }
+
+        .spot.waiting {
+            background: linear-gradient(135deg, #f39c12, #d68910);
+            border-color: #d68910;
+            color: white;
+        }
+
+        .spot.available {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            border-color: #27ae60;
+            color: white;
+        }
+
+        .spot.loaded {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            border-color: #8e44ad;
+            color: white;
+        }
+
+        .spot:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .spot-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .spot-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status-time {
+            display: block;
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .vehicle-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            justify-content: center; /* Centraliza o conteúdo na tela */
+            align-items: center; /* Centraliza o conteúdo na tela */
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: auto; /* Remove margin: 5% auto; para usar flexbox */
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+            position: relative; /* Para o botão fechar */
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            color: #aaa;
+            position: absolute; /* Posiciona o botão fechar */
+            top: 15px;
+            right: 25px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #e74c3c;
+        }
+
+        /* Alertas */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-loaded {
+            background-color: #e8daef;
+            color: #8e44ad;
+            border: 1px solid #d3b8e0;
+        }
+
+        .alert-waiting {
+             background-color: #fff3cd;
+             color: #856404;
+             border: 1px solid #ffeeba;
+        }
+
+        /* Animações de Alerta */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        /* Responsividade */
+        @media (max-width: 992px) {
+             .stats-section {
+                 grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+             }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr; /* Coloca sidebar e grid em uma única coluna */
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .spots-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+            .stats-section {
+                grid-template-columns: repeat(2, 1fr);
+                padding: 20px 20px 0;
+            }
+        }
+        @media (max-width: 480px) {
+             .stats-section {
+                 grid-template-columns: 1fr;
+                 padding: 15px 15px 0;
+             }
+             .sidebar, .patio-grid {
+                padding: 15px;
+             }
+             .btn {
+                padding: 10px 20px;
+                font-size: 15px;
+             }
+             .form-section h3 {
+                font-size: 1.2em;
+             }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚛 Controle de Pátio FTD</h1>
+            <p>Sistema de Reserva de Veículos para Carregamento</p>
+        </div>
+
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-number available-stat" id="availableCount">0</div>
+                <div class="stat-label">Disponíveis</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number waiting-stat" id="waitingCount">0</div>
+                <div class="stat-label">Aguardando</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number occupied-stat" id="occupiedCount">0</div>
+                <div class="stat-label">Carregando</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number loaded-stat" id="loadedCount">0</div>
+                <div class="stat-label">Carregadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number total-stat" id="totalCount">20</div>
+                <div class="stat-label">Total</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="form-section">
+                    <h3>📝 Nova Reserva</h3>
+                    <div class="form-group">
+                        <label for="tripCode">Código da Viagem:</label>
+                        <input type="text" id="tripCode" placeholder="Digite o código da viagem">
+                    </div>
+                    <div class="form-group">
+                        <label for="destination">Destino:</label>
+                        <input type="text" id="destination" placeholder="Digite o destino da viagem">
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleType">Tipo de Veículo:</label>
+                        <select id="vehicleType">
+                            <option value="">Selecione o tipo</option>
+                            <option value="BAU">BAU</option>
+                            <option value="GRANELEIRO">GRANELEIRO</option>
+                            <option value="SIDER">SIDER</option>
+                            <option value="GRADE_BAIXA">GRADE BAIXA</option>
+                            <option value="4_EIXO">4 EIXO</option>
+                            <option value="RODOTREM">RODOTREM</ITEM>
+                            <option value="VANDERLEIA">VANDERLEIA</option>
+                            <option value="BI_TREM">BI-TREM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transportadora">Transportadora:</label>
+                        <input type="text" id="transportadora" placeholder="Digite a transportadora">
+                    </div>
+                     <div class="form-group">
+                        <label for="vehiclePlate">Placa do Veículo:</label>
+                        <input type="text" id="vehiclePlate" placeholder="Digite a placa do veículo">
+                    </div>
+
+                    <button class="btn" onclick="reserveSpot()">🚛 Fazer Reserva</button>
+                </div>
+
+                <div class="form-section">
+                    <h3>🔍 Buscar Reserva</h3>
+                    <div class="form-group">
+                        <label for="searchPlate">Buscar por Código ou Placa:</label>
+                        <input type="text" id="searchPlate" placeholder="Digite o código ou placa">
+                    </div>
+                    <button class="btn" onclick="searchReservation()">🔍 Buscar</button>
+                </div>
+            </div>
+
+            <div class="patio-grid">
+                <div class="patio-header">
+                    <h3>🅿️ Veiculos no Pátio</h3>
+                    <div class="status-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #2ecc71, #27ae60);"></div>
+                            <span>Disponível</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #f39c12, #d68910);"></div>
+                            <span>Aguardando</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #e74c3c, #c0392b);"></div>
+                            <span>Carregando</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);"></div>
+                            <span>Carregada</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="spots-grid" id="spotsGrid">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="spotModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO DO GOOGLE APPS SCRIPT ---
+        // VOCÊ DEVE SUBSTITUIR 'SEU_URL_DO_APPS_SCRIPT_AQUI' PELO URL REAL DO SEU WEB APP DO APPS SCRIPT!
+        // Este URL será parecido com: https://script.google.com/macros/s/AKfyc.../exec
+        const APPS_SCRIPT_WEB_APP_URL = 'SEU_URL_DO_APPS_SCRIPT_AQUI';
+
+        // --- ESTADO LOCAL DO APLICATIVO ---
+        // Este objeto 'patioSpots' mantém o estado atual do pátio NO NAVEGADOR do usuário.
+        // Ele é persistente (salvo no localStorage) mas NÃO é sincronizado entre usuários.
+        let patioSpots = {};
+        let selectedSpot = null;
+        const totalSpots = 20; // Número total de vagas no pátio
+        const LOCAL_STORAGE_KEY = 'patioControleFTDState'; // Chave para o localStorage
+
+        // --- FUNÇÕES DE UTILIDADE ---
+
+        // Formata um objeto Date para uma string 'dd/mm/yyyy hh:mm'
+        function formatDateTime(date) {
+            if (!date) return 'N/A';
+            const d = new Date(date);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0'); // Meses são 0-indexados
+            const year = d.getFullYear();
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+
+        // --- PERSISTÊNCIA DE DADOS (LOCALSTORAGE) ---
+
+        // Salva o estado atual do pátio no localStorage do navegador
+        function savePatioState() {
+            // Convertendo objetos Date para string ISO para poderem ser salvos em JSON
+            const serializablePatioSpots = {};
+            for (const id in patioSpots) {
+                serializablePatioSpots[id] = { ...patioSpots[id] };
+                if (serializablePatioSpots[id].reservationTime) {
+                    serializablePatioSpots[id].reservationTime = serializablePatioSpots[id].reservationTime.toISOString();
+                }
+                if (serializablePatioSpots[id].arrivalTime) {
+                    serializablePatioSpots[id].arrivalTime = serializablePatioSpots[id].arrivalTime.toISOString();
+                }
+                if (serializablePatioSpots[id].loadFinishTime) {
+                    serializablePatioSpots[id].loadFinishTime = serializablePatioSpots[id].loadFinishTime.toISOString();
+                }
+            }
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(serializablePatioSpots));
+        }
+
+        // Carrega o estado do pátio do localStorage ao iniciar a página
+        function loadPatioState() {
+            const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                // Convertendo strings ISO de volta para objetos Date
+                for (const spotId in parsedData) {
+                    if (parsedData[spotId].reservationTime) {
+                        parsedData[spotId].reservationTime = new Date(parsedData[spotId].reservationTime);
+                    }
+                    if (parsedData[spotId].arrivalTime) {
+                        parsedData[spotId].arrivalTime = new Date(parsedData[spotId].arrivalTime);
+                    }
+                    if (parsedData[spotId].loadFinishTime) {
+                        parsedData[spotId].loadFinishTime = new Date(parsedData[spotId].loadFinishTime);
+                    }
+                }
+                patioSpots = parsedData;
+            } else {
+                // Se não há dados salvos, inicializa o pátio do zero
+                for (let i = 1; i <= totalSpots; i++) {
+                    patioSpots[i] = {
+                        id: i,
+                        status: 'available',
+                        tripCode: null,
+                        destination: null,
+                        vehicleType: null,
+                        transportadora: null,
+                        vehiclePlate: null,
+                        reservationTime: null,
+                        arrivalTime: null,
+                        loadFinishTime: null
+                    };
+                }
+            }
+        }
+
+        // --- COMUNICAÇÃO COM GOOGLE APPS SCRIPT ---
+
+        // Envia dados de uma ação para o Google Apps Script para registro na planilha
+        async function sendToAppsScript(actionType, spotId, data = {}, observation = "") {
+            const payload = {
+                actionType: actionType,
+                spotId: spotId,
+                tripCode: data.tripCode || null,
+                destination: data.destination || null,
+                vehicleType: data.vehicleType || null,
+                transportadora: data.transportadora || null,
+                vehiclePlate: data.vehiclePlate || null,
+                // Garantindo que datas sejam strings ISO para envio seguro via JSON
+                reservationTime: data.reservationTime ? new Date(data.reservationTime).toISOString() : null,
+                arrivalTime: data.arrivalTime ? new Date(data.arrivalTime).toISOString() : null,
+                loadFinishTime: data.loadFinishTime ? new Date(data.loadFinishTime).toISOString() : null,
+                observation: observation
+            };
+
+            try {
+                const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    console.log(`Dados enviados com sucesso para a planilha via Apps Script: ${actionType} na Vaga ${spotId}`);
+                } else {
+                    console.error("Erro no Apps Script:", result.message);
+                    showAlert(`Erro ao registrar ação na planilha: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                console.error("Erro ao enviar dados para o Apps Script:", error);
+                showAlert('Erro de rede ao registrar ação na planilha! Verifique sua conexão ou o URL do Apps Script.', 'error');
+            }
+        }
+
+        // --- FUNÇÕES DE GERENCIAMENTO DA INTERFACE E ESTADO ---
+
+        // Inicializa o estado do pátio ao carregar a página
+        function initializeSystem() {
+            loadPatioState(); // Tenta carregar o estado salvo do localStorage
+            renderSpots();
+            updateStats();
+        }
+
+        // Renderiza (desenha) as vagas no grid do pátio
+        function renderSpots() {
+            const spotsGrid = document.getElementById('spotsGrid');
+            spotsGrid.innerHTML = '';
+
+            for (let i = 1; i <= totalSpots; i++) {
+                const spot = patioSpots[i];
+                const spotElement = document.createElement('div');
+                spotElement.className = `spot ${spot.status}`;
+                spotElement.onclick = () => openSpotModal(i);
+
+                let statusText = '';
+                let statusTime = '';
+
+                switch(spot.status) {
+                    case 'available':
+                        statusText = '✅ Disponível';
+                        break;
+                    case 'waiting':
+                        statusText = '⏰ Aguardando';
+                        statusTime = formatDateTime(spot.reservationTime);
+                        break;
+                    case 'occupied':
+                        statusText = '🚛 Carregando';
+                        statusTime = formatDateTime(spot.arrivalTime);
+                        break;
+                    case 'loaded':
+                        statusText = '🏁 Carregado';
+                        statusTime = formatDateTime(spot.loadFinishTime);
+                        break;
+                }
+
+                let spotContent = `
+                    <div class="spot-number">Vaga ${i}</div>
+                    <div class="spot-info">
+                        ${statusText}
+                        ${statusTime ? `<span class="status-time">${statusTime}</span>` : ''}
+                    </div>
+                `;
+
+                if (spot.status !== 'available') {
+                    spotContent += `
+                        <div class="vehicle-info">
+                            <div><strong>Código:</strong> ${spot.tripCode || 'N/A'}</div>
+                            <div><strong>Destino:</strong> ${spot.destination || 'N/A'}</div>
+                            <div><strong>Veículo:</strong> ${spot.vehicleType || 'N/A'}</div>
+                            <div><strong>Transportadora:</strong> ${spot.transportadora || 'N/A'}</div>
+                            <div><strong>Placa:</strong> ${spot.vehiclePlate || 'N/A'}</div>
+                        </div>
+                    `;
+                }
+
+                spotElement.innerHTML = spotContent;
+                spotsGrid.appendChild(spotElement);
+            }
+        }
+
+        // Atualiza os contadores na seção de estatísticas
+        function updateStats() {
+            const available = Object.values(patioSpots).filter(spot => spot.status === 'available').length;
+            const waiting = Object.values(patioSpots).filter(spot => spot.status === 'waiting').length;
+            const occupied = Object.values(patioSpots).filter(spot => spot.status === 'occupied').length;
+            const loaded = Object.values(patioSpots).filter(spot => spot.status === 'loaded').length;
+
+            document.getElementById('availableCount').textContent = available;
+            document.getElementById('waitingCount').textContent = waiting;
+            document.getElementById('occupiedCount').textContent = occupied;
+            document.getElementById('loadedCount').textContent = loaded;
+            document.getElementById('totalCount').textContent = totalSpots;
+        }
+
+        // --- FUNÇÕES DE AÇÃO DO USUÁRIO ---
+
+        // Realiza uma nova reserva de vaga
+        async function reserveSpot() {
+            const tripCode = document.getElementById('tripCode').value.trim().toUpperCase();
+            const destination = document.getElementById('destination').value.trim();
+            const vehicleType = document.getElementById('vehicleType').value;
+            const transportadora = document.getElementById('transportadora').value.trim().toUpperCase();
+            const vehiclePlate = document.getElementById('vehiclePlate').value.trim().toUpperCase();
+
+            if (!tripCode || !destination || !vehicleType || !transportadora || !vehiclePlate) {
+                showAlert('Por favor, preencha todos os campos!', 'error');
+                return;
+            }
+
+            const existingReservation = Object.values(patioSpots).find(spot =>
+                (spot.tripCode === tripCode || spot.vehiclePlate === vehiclePlate) && ['waiting', 'occupied', 'loaded'].includes(spot.status)
+            );
+
+            if (existingReservation) {
+                showAlert(`Código ${tripCode} ou Placa ${vehiclePlate} já possui reserva/ocupação na Vaga ${existingReservation.id}!`, 'error');
+                return;
+            }
+
+            const availableSpotId = Object.keys(patioSpots).find(id => patioSpots[id].status === 'available');
+
+            if (!availableSpotId) {
+                showAlert('Não há vagas disponíveis no momento!', 'error');
+                return;
+            }
+
+            // Atualiza o estado da vaga localmente
+            patioSpots[availableSpotId] = {
+                ...patioSpots[availableSpotId],
+                status: 'waiting',
+                tripCode: tripCode,
+                destination: destination,
+                vehicleType: vehicleType,
+                transportadora: transportadora,
+                vehiclePlate: vehiclePlate,
+                reservationTime: new Date(),
+                arrivalTime: null,
+                loadFinishTime: null
+            };
+
+            // Salva o estado no localStorage
+            savePatioState();
+
+            // Envia os dados da nova reserva para o Google Apps Script
+            await sendToAppsScript(
+                "Nova Reserva",
+                availableSpotId,
+                patioSpots[availableSpotId],
+                "Veículo reservado e aguardando chegada."
+            );
+
+            // Limpa os campos do formulário
+            document.getElementById('tripCode').value = '';
+            document.getElementById('destination').value = '';
+            document.getElementById('vehicleType').value = '';
+            document.getElementById('transportadora').value = '';
+            document.getElementById('vehiclePlate').value = '';
+
+            renderSpots();
+            updateStats();
+            showAlert(`Reserva confirmada para a Vaga ${availableSpotId}! Status: Aguardando.`, 'success');
+        }
+
+        // Busca uma reserva pelo código da viagem ou placa
+        function searchReservation() {
+            const searchTerm = document.getElementById('searchPlate').value.trim().toUpperCase();
+
+            if (!searchTerm) {
+                showAlert('Digite um código ou placa para buscar!', 'error');
+                return;
+            }
+
+            const reservation = Object.values(patioSpots).find(spot =>
+                (spot.tripCode && spot.tripCode === searchTerm) ||
+                (spot.vehiclePlate && spot.vehiclePlate === searchTerm)
+            );
+
+            if (reservation) {
+                openSpotModal(reservation.id);
+                document.getElementById('searchPlate').value = '';
+            } else {
+                showAlert(`Nenhuma reserva encontrada para "${searchTerm}"`, 'error');
+            }
+        }
+
+        // Abre o modal de detalhes e ações para uma vaga específica
+        function openSpotModal(spotId) {
+            selectedSpot = spotId;
+            const spot = patioSpots[spotId];
+            const modal = document.getElementById('spotModal');
+            const modalContent = document.getElementById('modalContent');
+
+            let content = `<h2>Vaga ${spotId}</h2>`;
+            let statusText = '';
+            let statusIcon = '';
+            let alertClass = '';
+
+            switch(spot.status) {
+                case 'available':
+                    statusText = 'Disponível';
+                    statusIcon = '✅';
+                    alertClass = 'alert-success';
+                    break;
+                case 'waiting':
+                    statusText = 'Aguardando';
+                    statusIcon = '⏰';
+                    alertClass = 'alert-warning';
+                    break;
+                case 'occupied':
+                    statusText = 'Carregando';
+                    statusIcon = '🚛';
+                    alertClass = 'alert-error';
+                    break;
+                case 'loaded':
+                    statusText = 'Carregado';
+                    statusIcon = '🏁';
+                    alertClass = 'alert-loaded';
+                    break;
+            }
+
+            if (spot.status === 'available') {
+                content += `
+                    <div class="alert ${alertClass}">
+                        ${statusIcon} Esta vaga está ${statusText.toLowerCase()}.
+                    </div>
+                    <p>Utilize o formulário lateral para fazer uma nova reserva.</p>
+                `;
+            } else {
+                content += `
+                    <div class="alert ${alertClass}">
+                        ${statusIcon} Esta vaga está ${statusText.toLowerCase()}.
+                    </div>
+                    <div style="margin: 20px 0;">
+                        <p><strong>Código da Viagem:</strong> ${spot.tripCode || 'N/A'}</p>
+                        <p><strong>Destino:</strong> ${spot.destination || 'N/A'}</p>
+                        <p><strong>Tipo de Veículo:</strong> ${spot.vehicleType || 'N/A'}</p>
+                        <p><strong>Transportadora:</strong> ${spot.transportadora || 'N/A'}</p>
+                        <p><strong>Placa:</strong> ${spot.vehiclePlate || 'N/A'}</p>
+                        <p><strong>Reserva feita em:</strong> ${formatDateTime(spot.reservationTime)}</p>
+                        ${spot.arrivalTime ? `<p><strong>Chegada em:</strong> ${formatDateTime(spot.arrivalTime)}</p>` : ''}
+                        ${spot.loadFinishTime ? `<p><strong>Carregamento finalizado em:</strong> ${formatDateTime(spot.loadFinishTime)}</p>` : ''}
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">`;
+
+                if (spot.status === 'waiting') {
+                    content += `<button class="btn" onclick="confirmArrival(${spotId})">✅ Confirmar Chegada</button>`;
+                } else if (spot.status === 'occupied') {
+                    content += `<button class="btn" onclick="completeLoading(${spotId})">🏁 Finalizar Carregamento</button>`;
+                } else if (spot.status === 'loaded') {
+                    content += `<button class="btn btn-purple" onclick="releaseSpot(${spotId})">🔓 Liberar Vaga</button>`;
+                }
+
+                content += `<button class="btn btn-danger" onclick="cancelReservation(${spotId})">❌ Cancelar/Liberar</button>`;
+                content += `</div>`;
+            }
+
+            modalContent.innerHTML = content;
+            modal.style.display = 'flex';
+        }
+
+        // Confirma a chegada de um veículo na vaga
+        async function confirmArrival(spotId) {
+            const spot = patioSpots[spotId];
+            spot.status = 'occupied';
+            spot.arrivalTime = new Date();
+            spot.loadFinishTime = null;
+
+            // Salva o estado no localStorage
+            savePatioState();
+
+            // Envia a ação para o Google Apps Script
+            await sendToAppsScript(
+                "Confirmar Chegada",
+                spotId,
+                spot,
+                "Veículo chegou e está aguardando carregamento."
+            );
+
+            closeModal();
+            renderSpots();
+            updateStats();
+            showAlert(`Chegada confirmada para a Vaga ${spotId}! Status: Carregando.`, 'success');
+        }
+
+        // Finaliza o carregamento de um veículo na vaga
+        async function completeLoading(spotId) {
+            const spot = patioSpots[spotId];
+            spot.status = 'loaded';
+            spot.loadFinishTime = new Date();
+
+            // Salva o estado no localStorage
+            savePatioState();
+
+            // Envia a ação para o Google Apps Script
+            await sendToAppsScript(
+                "Finalizar Carregamento",
+                spotId,
+                spot,
+                "Carregamento do veículo finalizado."
+            );
+
+            closeModal();
+            renderSpots();
+            updateStats();
+            showAlert(`Carregamento finalizado para a Vaga ${spotId}. Status: Carregado.`, 'success');
+        }
+
+        // Libera uma vaga, tornando-a disponível
+        async function releaseSpot(spotId) {
+            if (confirm('Tem certeza que deseja liberar esta vaga?')) {
+                const spot = patioSpots[spotId];
+
+                // Reseta o estado da vaga localmente
+                patioSpots[spotId] = {
+                    id: spotId,
+                    status: 'available',
+                    tripCode: null,
+                    destination: null,
+                    vehicleType: null,
+                    transportadora: null,
+                    vehiclePlate: null,
+                    reservationTime: null,
+                    arrivalTime: null,
+                    loadFinishTime: null
+                };
+
+                // Salva o estado no localStorage
+                savePatioState();
+
+                // Envia a ação para o Google Apps Script
+                await sendToAppsScript(
+                    "Liberar Vaga",
+                    spotId,
+                    spot,
+                    "Vaga liberada após carregamento completo."
+                );
+
+                closeModal();
+                renderSpots();
+                updateStats();
+                showAlert(`Vaga ${spotId} liberada com sucesso!`, 'success');
+            }
+        }
+
+        // Cancela uma reserva ou libera uma vaga a qualquer momento
+        async function cancelReservation(spotId) {
+            const spot = patioSpots[spotId];
+            let confirmationMessage = '';
+            let observationText = '';
+
+            switch(spot.status) {
+                case 'waiting':
+                    confirmationMessage = 'Tem certeza que deseja cancelar esta reserva (Status Aguardando)?';
+                    observationText = "Reserva cancelada (veículo não chegou ou desistiu).";
+                    break;
+                case 'occupied':
+                    confirmationMessage = 'Tem certeza que deseja cancelar o carregamento e liberar a vaga (Status Carregando)?';
+                    observationText = "Carregamento cancelado ou interrompido. Vaga liberada.";
+                    break;
+                case 'loaded':
+                    confirmationMessage = 'Tem certeza que deseja liberar esta vaga (Status Carregada)?';
+                    observationText = "Vaga liberada por ação de cancelamento.";
+                    break;
+                default:
+                    confirmationMessage = 'Tem certeza que deseja liberar esta vaga?';
+                    observationText = "Vaga liberada por ação de cancelamento.";
+            }
+
+            if (confirm(confirmationMessage)) {
+                const spotData = { ...spot };
+
+                // Reseta o estado da vaga localmente
+                patioSpots[spotId] = {
+                    id: spotId,
+                    status: 'available',
+                    tripCode: null,
+                    destination: null,
+                    vehicleType: null,
+                    transportadora: null,
+                    vehiclePlate: null,
+                    reservationTime: null,
+                    arrivalTime: null,
+                    loadFinishTime: null
+                };
+
+                // Salva o estado no localStorage
+                savePatioState();
+
+                // Envia a ação para o Google Apps Script
+                await sendToAppsScript(
+                    "Cancelar/Liberar",
+                    spotId,
+                    spotData,
+                    observationText
+                );
+
+                closeModal();
+                renderSpots();
+                updateStats();
+                showAlert(`Status da Vaga ${spotId} cancelado! Vaga liberada.`, 'success');
+            }
+        }
+
+        // Fecha o modal de detalhes da vaga
+        function closeModal() {
+            document.getElementById('spotModal').style.display = 'none';
+            selectedSpot = null;
+        }
+
+        // Exibe alertas na tela
+        function showAlert(message, type) {
+            const existingAlerts = document.querySelectorAll('.dynamic-alert');
+            existingAlerts.forEach(alert => alert.remove());
+
+            const alert = document.createElement('div');
+            const alertTypeClass = type === 'warning' ? 'alert-warning' : `alert-${type}`;
+            alert.className = `alert ${alertTypeClass} dynamic-alert`;
+            alert.textContent = message;
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.style.maxWidth = '400px';
+            alert.style.animation = 'slideInRight 0.3s ease';
+
+            document.body.appendChild(alert);
+
+            setTimeout(() => {
+                alert.style.animation = 'slideOutRight 0.3s ease forwards';
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // --- INICIALIZAÇÃO E EVENT LISTENERS ---
+
+        // Executa a inicialização quando a página é carregada
+        document.addEventListener('DOMContentLoaded', initializeSystem);
+
+        // Define eventos para fechar o modal
+        document.querySelector('.close').onclick = closeModal;
+        window.onclick = function(event) {
+            const modal = document.getElementById('spotModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+
+        // Formatação de entrada de texto para maiúsculas
+        document.getElementById('tripCode').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+        document.getElementById('transportadora').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+        document.getElementById('vehiclePlate').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    </script>
+</body>
+</html>
